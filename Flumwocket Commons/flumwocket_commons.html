@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Flumwocket Commons</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+            --flumwocket-purple: #9b7bb8;
+            --flumwocket-pink: #d4a5a5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 13px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .control-section {
+            margin-bottom: 28px;
+        }
+
+        .control-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '◐';
+            color: var(--flumwocket-purple);
+            font-weight: bold;
+        }
+
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--flumwocket-purple);
+            box-shadow: 0 0 0 2px rgba(155, 123, 184, 0.2);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 6px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--flumwocket-purple);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: #8a6aa7;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--flumwocket-purple);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--anthropic-mid-gray);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .color-group {
+            margin-bottom: 14px;
+        }
+
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 4px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker-container input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        .button {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--anthropic-light-gray);
+            color: var(--anthropic-dark);
+        }
+
+        .button:hover {
+            background: var(--anthropic-mid-gray);
+            color: white;
+        }
+
+        .button.primary {
+            background: var(--flumwocket-purple);
+            color: white;
+        }
+
+        .button.primary:hover {
+            background: #8a6aa7;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .button-row .button {
+            flex: 1;
+        }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        #canvas-container {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(20, 20, 19, 0.15);
+        }
+
+        .loading {
+            font-family: 'Lora', serif;
+            color: var(--anthropic-mid-gray);
+            font-style: italic;
+        }
+
+        .wisdom {
+            font-size: 11px;
+            color: var(--anthropic-mid-gray);
+            font-style: italic;
+            line-height: 1.5;
+            padding: 12px;
+            background: rgba(155, 123, 184, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>🎪 Flumwocket Commons</h1>
+            <p class="subtitle">Where creatures born in the gaps between thoughts feed on your hesitation, visible only when you're not looking directly.</p>
+
+            <!-- Seed Section -->
+            <div class="control-section">
+                <h3>Seed</h3>
+                <input type="text" id="seed-input" class="seed-input" value="42" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button" onclick="previousSeed()">← Prev</button>
+                    <button class="button" onclick="nextSeed()">Next →</button>
+                </div>
+                <button class="button primary" onclick="randomSeedAndUpdate()">Random Seed</button>
+            </div>
+
+            <!-- Parameters Section -->
+            <div class="control-section">
+                <h3>Hesitation</h3>
+                
+                <div class="control-group">
+                    <label>Almost-Particles</label>
+                    <div class="slider-container">
+                        <input type="range" id="particleCount" min="100" max="3000" step="100" value="1200" oninput="updateParam('particleCount', this.value)">
+                        <span class="value-display" id="particleCount-value">1200</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Hesitation Strength</label>
+                    <div class="slider-container">
+                        <input type="range" id="hesitation" min="0.1" max="1.0" step="0.05" value="0.5" oninput="updateParam('hesitation', this.value)">
+                        <span class="value-display" id="hesitation-value">0.5</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Field Turbulence</label>
+                    <div class="slider-container">
+                        <input type="range" id="turbulence" min="0.002" max="0.015" step="0.001" value="0.006" oninput="updateParam('turbulence', this.value)">
+                        <span class="value-display" id="turbulence-value">0.006</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Ghost Persistence</label>
+                    <div class="slider-container">
+                        <input type="range" id="ghostFade" min="1" max="30" step="1" value="12" oninput="updateParam('ghostFade', this.value)">
+                        <span class="value-display" id="ghostFade-value">12</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Flumwocket Presence</label>
+                    <div class="slider-container">
+                        <input type="range" id="creatureStrength" min="0" max="100" step="5" value="50" oninput="updateParam('creatureStrength', this.value)">
+                        <span class="value-display" id="creatureStrength-value">50</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colors Section -->
+            <div class="control-section">
+                <h3>Memory Palette</h3>
+                
+                <div class="color-group">
+                    <label>Conviction (warm)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#d97757" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#d97757</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Doubt (cool)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#6a9bcc" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#6a9bcc</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>The Flumwocket</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#9b7bb8" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#9b7bb8</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Section -->
+            <div class="control-section">
+                <h3>Actions</h3>
+                <div class="button-row">
+                    <button class="button" onclick="resetParameters()">Reset</button>
+                    <button class="button" onclick="downloadImage()">Download</button>
+                </div>
+            </div>
+
+            <div class="wisdom">
+                "The Flumwocket doesn't care what you call it. It's too busy collecting your almosts."
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Gathering hesitations...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // FLUMWOCKET COMMONS - HESITANT EMERGENCE
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 42,
+            particleCount: 1200,
+            hesitation: 0.5,
+            turbulence: 0.006,
+            ghostFade: 12,
+            creatureStrength: 50,
+            colorPalette: ['#d97757', '#6a9bcc', '#9b7bb8']
+        };
+
+        let defaultParams = JSON.parse(JSON.stringify(params));
+
+        // System state
+        let particles = [];
+        let flumwocket = { x: 0, y: 0, vx: 0, vy: 0 };
+        let time = 0;
+        let canvas;
+
+        function setup() {
+            canvas = createCanvas(800, 800);
+            canvas.parent('canvas-container');
+            colorMode(HSB, 360, 100, 100, 100);
+            initializeSystem();
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function initializeSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+            time = 0;
+            
+            // Initialize particles
+            particles = [];
+            for (let i = 0; i < params.particleCount; i++) {
+                particles.push(new AlmostParticle());
+            }
+            
+            // Initialize the Flumwocket (invisible attractor)
+            flumwocket = {
+                x: width / 2 + (random() - 0.5) * 200,
+                y: height / 2 + (random() - 0.5) * 200,
+                vx: 0,
+                vy: 0,
+                phase: random(TWO_PI)
+            };
+            
+            // Clear with warm paper color
+            background(45, 8, 98);
+        }
+
+        function draw() {
+            // Soft fade for ghost trails
+            noStroke();
+            fill(45, 8, 98, 100 / params.ghostFade);
+            rect(0, 0, width, height);
+            
+            time += 0.01;
+            
+            // Move the Flumwocket slowly, mysteriously
+            moveFlumwocket();
+            
+            // Update and draw particles
+            for (let p of particles) {
+                p.update();
+                p.display();
+            }
+        }
+
+        function moveFlumwocket() {
+            // The Flumwocket drifts through the field on its own strange path
+            let noiseX = noise(time * 0.3, 0) - 0.5;
+            let noiseY = noise(0, time * 0.3) - 0.5;
+            
+            flumwocket.vx += noiseX * 0.1;
+            flumwocket.vy += noiseY * 0.1;
+            
+            // Damping
+            flumwocket.vx *= 0.98;
+            flumwocket.vy *= 0.98;
+            
+            flumwocket.x += flumwocket.vx;
+            flumwocket.y += flumwocket.vy;
+            
+            // Soft boundary - it prefers the center but can wander
+            let centerPull = 0.001;
+            flumwocket.vx += (width/2 - flumwocket.x) * centerPull;
+            flumwocket.vy += (height/2 - flumwocket.y) * centerPull;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ALMOST-PARTICLE: A thing that hesitates
+        // ═══════════════════════════════════════════════════════════════════════
+
+        class AlmostParticle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = random(width);
+                this.y = random(height);
+                this.vx = 0;
+                this.vy = 0;
+                
+                // What it almost was going to do
+                this.originalHue = random(360);
+                this.confidence = random(0.3, 1.0);
+                
+                // Hesitation accumulator
+                this.hesitationLevel = 0;
+                
+                // For trail
+                this.prevX = this.x;
+                this.prevY = this.y;
+                
+                // Lifespan
+                this.age = 0;
+                this.maxAge = random(200, 600);
+            }
+            
+            update() {
+                this.prevX = this.x;
+                this.prevY = this.y;
+                
+                // Flow field force
+                let noiseVal = noise(
+                    this.x * params.turbulence,
+                    this.y * params.turbulence,
+                    time * 0.5
+                );
+                let angle = noiseVal * TWO_PI * 4;
+                
+                // Secondary turbulence layer
+                let noiseVal2 = noise(
+                    this.x * params.turbulence * 2 + 1000,
+                    this.y * params.turbulence * 2,
+                    time * 0.3
+                );
+                angle += (noiseVal2 - 0.5) * PI * params.hesitation;
+                
+                // The almost-force: what it was going to do
+                let almostForce = 0.5;
+                this.vx += cos(angle) * almostForce;
+                this.vy += sin(angle) * almostForce;
+                
+                // Hesitation: random stuttering
+                if (random() < params.hesitation * 0.3) {
+                    this.vx *= random(0.1, 0.5);
+                    this.vy *= random(0.1, 0.5);
+                    this.hesitationLevel += 0.1;
+                }
+                
+                // Flumwocket influence (invisible attractor)
+                let dx = flumwocket.x - this.x;
+                let dy = flumwocket.y - this.y;
+                let dist = sqrt(dx * dx + dy * dy);
+                
+                if (dist < 200 && dist > 20) {
+                    // Curve around the Flumwocket, not toward it
+                    let influence = map(dist, 20, 200, params.creatureStrength / 50, 0);
+                    // Perpendicular force creates orbiting effect
+                    this.vx += (-dy / dist) * influence * 0.3;
+                    this.vy += (dx / dist) * influence * 0.3;
+                    
+                    // Slight attraction to create density
+                    this.vx += dx / dist * influence * 0.05;
+                    this.vy += dy / dist * influence * 0.05;
+                    
+                    // Being near the Flumwocket reduces hesitation temporarily
+                    this.confidence = min(1, this.confidence + 0.01);
+                } else {
+                    // Far from Flumwocket, confidence fades
+                    this.confidence = max(0.1, this.confidence - 0.002);
+                }
+                
+                // Damping based on confidence
+                let damping = map(this.confidence, 0.1, 1, 0.85, 0.95);
+                this.vx *= damping;
+                this.vy *= damping;
+                
+                // Speed limit
+                let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
+                let maxSpeed = 3;
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
+                
+                // Move
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Soft boundaries
+                let margin = 50;
+                if (this.x < margin) this.vx += 0.5;
+                if (this.x > width - margin) this.vx -= 0.5;
+                if (this.y < margin) this.vy += 0.5;
+                if (this.y > height - margin) this.vy -= 0.5;
+                
+                // Age
+                this.age++;
+                if (this.age > this.maxAge || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                    this.reset();
+                }
+            }
+            
+            display() {
+                // Color based on conviction vs hesitation
+                let warmColor = hexToHSB(params.colorPalette[0]);
+                let coolColor = hexToHSB(params.colorPalette[1]);
+                let flumColor = hexToHSB(params.colorPalette[2]);
+                
+                // Mix based on confidence
+                let h, s, b;
+                if (this.confidence > 0.5) {
+                    // Confident: warm colors
+                    let t = (this.confidence - 0.5) * 2;
+                    h = lerp(flumColor.h, warmColor.h, t);
+                    s = lerp(flumColor.s, warmColor.s, t);
+                    b = lerp(flumColor.b, warmColor.b, t);
+                } else {
+                    // Hesitant: cool colors
+                    let t = this.confidence * 2;
+                    h = lerp(coolColor.h, flumColor.h, t);
+                    s = lerp(coolColor.s, flumColor.s, t);
+                    b = lerp(coolColor.b, flumColor.b, t);
+                }
+                
+                // Fade with hesitation accumulation
+                let alpha = map(this.hesitationLevel, 0, 5, 60, 20);
+                alpha *= map(this.age, 0, this.maxAge, 1, 0.3);
+                
+                // Draw trail
+                stroke(h, s, b, alpha);
+                
+                // Line weight: confident = thin/sharp, hesitant = soft/thick
+                let weight = map(this.confidence, 0.1, 1, 2.5, 0.5);
+                strokeWeight(weight);
+                
+                line(this.prevX, this.prevY, this.x, this.y);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function hexToHSB(hex) {
+            // Remove # if present
+            hex = hex.replace('#', '');
+            
+            // Parse RGB
+            let r = parseInt(hex.substring(0, 2), 16) / 255;
+            let g = parseInt(hex.substring(2, 4), 16) / 255;
+            let b = parseInt(hex.substring(4, 6), 16) / 255;
+            
+            let max = Math.max(r, g, b);
+            let min = Math.min(r, g, b);
+            let d = max - min;
+            
+            let h = 0;
+            let s = max === 0 ? 0 : d / max;
+            let v = max;
+            
+            if (d !== 0) {
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            
+            return { h: h * 360, s: s * 100, b: v * 100 };
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI HANDLERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateParam(paramName, value) {
+            if (paramName === 'particleCount') {
+                params.particleCount = parseInt(value);
+                // Adjust particle count live
+                while (particles.length < params.particleCount) {
+                    particles.push(new AlmostParticle());
+                }
+                while (particles.length > params.particleCount) {
+                    particles.pop();
+                }
+            } else if (paramName === 'hesitation') {
+                params.hesitation = parseFloat(value);
+            } else if (paramName === 'turbulence') {
+                params.turbulence = parseFloat(value);
+            } else if (paramName === 'ghostFade') {
+                params.ghostFade = parseInt(value);
+            } else if (paramName === 'creatureStrength') {
+                params.creatureStrength = parseInt(value);
+            }
+            
+            document.getElementById(paramName + '-value').textContent = value;
+        }
+
+        function updateColor(colorId, value) {
+            let index = parseInt(colorId.replace('color', '')) - 1;
+            params.colorPalette[index] = value;
+            document.getElementById(colorId + '-value').textContent = value;
+        }
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            let input = document.getElementById('seed-input');
+            let newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+            
+            document.getElementById('particleCount').value = params.particleCount;
+            document.getElementById('particleCount-value').textContent = params.particleCount;
+            document.getElementById('hesitation').value = params.hesitation;
+            document.getElementById('hesitation-value').textContent = params.hesitation;
+            document.getElementById('turbulence').value = params.turbulence;
+            document.getElementById('turbulence-value').textContent = params.turbulence;
+            document.getElementById('ghostFade').value = params.ghostFade;
+            document.getElementById('ghostFade-value').textContent = params.ghostFade;
+            document.getElementById('creatureStrength').value = params.creatureStrength;
+            document.getElementById('creatureStrength-value').textContent = params.creatureStrength;
+            
+            document.getElementById('color1').value = params.colorPalette[0];
+            document.getElementById('color1-value').textContent = params.colorPalette[0];
+            document.getElementById('color2').value = params.colorPalette[1];
+            document.getElementById('color2-value').textContent = params.colorPalette[1];
+            document.getElementById('color3').value = params.colorPalette[2];
+            document.getElementById('color3-value').textContent = params.colorPalette[2];
+            
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function downloadImage() {
+            saveCanvas(canvas, 'flumwocket_commons_' + params.seed, 'png');
+        }
+
+        window.addEventListener('load', function() {
+            updateSeedDisplay();
+        });
+    </script>
+</body>
+</html>
