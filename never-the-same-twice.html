@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Never the Same Twice</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body {
+      background: #000;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    canvas { display: block; }
+    .info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.3);
+      font-family: Georgia, serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      pointer-events: none;
+    }
+    .seed {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      color: rgba(255,255,255,0.2);
+      font-family: monospace;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="info">click anywhere to begin again, different</div>
+  <div class="seed" id="seed"></div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    let flowField = [];
+    let cols, rows;
+    let scale = 20;
+    let zoff = 0;
+    let seed;
+
+    // Simple seeded random
+    function seededRandom() {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    }
+
+    function random(min, max) {
+      if (max === undefined) { max = min; min = 0; }
+      return min + seededRandom() * (max - min);
+    }
+
+    // Simplex-ish noise (simplified)
+    function noise(x, y, z) {
+      const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+      return n - Math.floor(n);
+    }
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      cols = Math.floor(width / scale);
+      rows = Math.floor(height / scale);
+    }
+
+    function init() {
+      seed = Date.now() % 100000;
+      document.getElementById('seed').textContent = 'seed: ' + seed;
+
+      particles = [];
+      const particleCount = Math.floor(random(800, 2000));
+
+      // Random palette for this instance
+      const hueBase = random(360);
+      const hueRange = random(30, 120);
+      const saturation = random(40, 80);
+      const lightness = random(40, 70);
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: random(width),
+          y: random(height),
+          hue: hueBase + random(-hueRange/2, hueRange/2),
+          saturation: saturation + random(-10, 10),
+          lightness: lightness + random(-15, 15),
+          alpha: random(0.02, 0.08),
+          speed: random(1, 4),
+          life: random(100, 500)
+        });
+      }
+
+      // Clear with slight transparency for trails
+      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    function updateFlowField() {
+      flowField = [];
+      const noiseScale = random(0.005, 0.02);
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const angle = noise(x * noiseScale, y * noiseScale, zoff) * Math.PI * 4;
+          flowField.push(angle);
+        }
+      }
+      zoff += 0.003;
+    }
+
+    function draw() {
+      // Fade the background slowly
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+      ctx.fillRect(0, 0, width, height);
+
+      updateFlowField();
+
+      particles.forEach((p, i) => {
+        // Get flow field angle at particle position
+        const col = Math.floor(p.x / scale);
+        const row = Math.floor(p.y / scale);
+        const index = col + row * cols;
+        const angle = flowField[index] || 0;
+
+        // Move particle
+        p.x += Math.cos(angle) * p.speed;
+        p.y += Math.sin(angle) * p.speed;
+        p.life--;
+
+        // Draw
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha})`;
+        ctx.fill();
+
+        // Wrap around edges
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        // Respawn dead particles
+        if (p.life <= 0) {
+          p.x = random(width);
+          p.y = random(height);
+          p.life = random(100, 500);
+        }
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    // Initialize
+    resize();
+    init();
+    draw();
+
+    // Click to regenerate with new seed
+    canvas.addEventListener('click', () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+      ctx.fillRect(0, 0, width, height);
+      init();
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      init();
+    });
+  </script>
+</body>
+</html>

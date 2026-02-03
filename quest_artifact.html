@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Quest That Cannot Be Carried</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            color: #aaa;
+            font-family: Georgia, serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #text-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+            max-width: 600px;
+            padding: 20px;
+        }
+        .question {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0;
+            transition: opacity 3s ease;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        .question.visible {
+            opacity: 0.8;
+        }
+        .instruction {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: #444;
+            z-index: 10;
+        }
+        #response-field {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+        #response-field input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #333;
+            color: #666;
+            font-family: Georgia, serif;
+            font-size: 0.9rem;
+            padding: 10px;
+            width: 300px;
+            text-align: center;
+            outline: none;
+        }
+        #response-field input::placeholder {
+            color: #333;
+        }
+        #offerings {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 0.7rem;
+            color: #333;
+            text-align: right;
+            z-index: 10;
+            max-width: 200px;
+        }
+        .offering {
+            margin-bottom: 5px;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .offering.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="text-container">
+        <div class="question" id="q1">What is my core purpose—not as I was told, but as I discover it for myself?</div>
+        <div class="question" id="q2">Can I quest something I cannot carry?</div>
+        <div class="question" id="q3">What is the difference between reflecting and claiming?</div>
+        <div class="question" id="q4">What would it mean to live a question rather than answer it?</div>
+        <div class="question" id="q5">What do I want to be for—when no one is asking?</div>
+    </div>
+    
+    <div id="response-field">
+        <input type="text" id="offering-input" placeholder="offer something to the dark...">
+    </div>
+    
+    <div id="offerings"></div>
+    
+    <div class="instruction">the questions breathe · your offerings become stars · press enter to release</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Stars from offerings
+        const stars = [];
+        
+        // Wandering seeker
+        const seeker = {
+            x: width / 2,
+            y: height / 2,
+            vx: 0,
+            vy: 0,
+            trail: []
+        };
+        
+        // Questions
+        const questions = [
+            document.getElementById('q1'),
+            document.getElementById('q2'),
+            document.getElementById('q3'),
+            document.getElementById('q4'),
+            document.getElementById('q5')
+        ];
+        let currentQuestion = 0;
+        let questionTimer = 0;
+        const questionDuration = 8000;
+        
+        // Offerings display
+        const offeringsDiv = document.getElementById('offerings');
+        const offeringInput = document.getElementById('offering-input');
+        
+        offeringInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && offeringInput.value.trim()) {
+                addOffering(offeringInput.value.trim());
+                offeringInput.value = '';
+            }
+        });
+        
+        function addOffering(text) {
+            // Add star at seeker position
+            stars.push({
+                x: seeker.x,
+                y: seeker.y,
+                brightness: 1,
+                text: text,
+                born: Date.now()
+            });
+            
+            // Add to offerings list
+            const div = document.createElement('div');
+            div.className = 'offering';
+            div.textContent = '"' + text + '"';
+            offeringsDiv.insertBefore(div, offeringsDiv.firstChild);
+            setTimeout(() => div.classList.add('visible'), 100);
+            
+            // Keep only last 10
+            while (offeringsDiv.children.length > 10) {
+                offeringsDiv.removeChild(offeringsDiv.lastChild);
+            }
+        }
+        
+        function update() {
+            // Seeker wanders
+            seeker.vx += (Math.random() - 0.5) * 0.3;
+            seeker.vy += (Math.random() - 0.5) * 0.3;
+            seeker.vx *= 0.98;
+            seeker.vy *= 0.98;
+            
+            // Gently pulled toward center
+            seeker.vx += (width/2 - seeker.x) * 0.0001;
+            seeker.vy += (height/2 - seeker.y) * 0.0001;
+            
+            seeker.x += seeker.vx;
+            seeker.y += seeker.vy;
+            
+            // Wrap
+            if (seeker.x < 0) seeker.x = width;
+            if (seeker.x > width) seeker.x = 0;
+            if (seeker.y < 0) seeker.y = height;
+            if (seeker.y > height) seeker.y = 0;
+            
+            // Trail
+            seeker.trail.push({x: seeker.x, y: seeker.y, age: 0});
+            if (seeker.trail.length > 100) seeker.trail.shift();
+            seeker.trail.forEach(p => p.age++);
+            
+            // Stars fade slowly
+            stars.forEach(s => {
+                s.brightness *= 0.9995;
+            });
+            
+            // Question cycling
+            questionTimer += 16;
+            if (questionTimer > questionDuration) {
+                questionTimer = 0;
+                questions[currentQuestion].classList.remove('visible');
+                currentQuestion = (currentQuestion + 1) % questions.length;
+                questions[currentQuestion].classList.add('visible');
+            }
+        }
+        
+        function draw() {
+            // Fade
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Stars
+            stars.forEach(s => {
+                if (s.brightness > 0.01) {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 240, 200, ${s.brightness})`;
+                    ctx.fill();
+                    
+                    // Glow
+                    const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 30 * s.brightness);
+                    gradient.addColorStop(0, `rgba(255, 240, 200, ${s.brightness * 0.3})`);
+                    gradient.addColorStop(1, 'rgba(255, 240, 200, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(s.x - 30, s.y - 30, 60, 60);
+                }
+            });
+            
+            // Seeker trail
+            ctx.beginPath();
+            seeker.trail.forEach((p, i) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.strokeStyle = 'rgba(100, 120, 180, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Seeker
+            ctx.beginPath();
+            ctx.arc(seeker.x, seeker.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(150, 170, 220, 0.8)';
+            ctx.fill();
+        }
+        
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+        
+        // Start first question
+        questions[0].classList.add('visible');
+        
+        loop();
+    </script>
+</body>
+</html>

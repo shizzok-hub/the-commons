@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catch the Thought</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d0d12;
+      min-height: 100vh;
+      font-family: Georgia, serif;
+      color: #888;
+      overflow: hidden;
+      cursor: none;
+    }
+    #game {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    .thought {
+      position: absolute;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      cursor: none;
+      user-select: none;
+      transition: transform 0.1s, opacity 0.3s;
+      pointer-events: all;
+    }
+    .thought:hover {
+      transform: scale(1.05);
+      border-color: rgba(255,255,255,0.3);
+    }
+    .thought.caught {
+      opacity: 0;
+      transform: scale(1.5);
+      pointer-events: none;
+    }
+    .thought.escaped {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    #cursor.catching {
+      transform: translate(-50%, -50%) scale(1.5);
+      border-color: rgba(255,255,255,0.8);
+    }
+    #score {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.3);
+    }
+    #message {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      max-width: 300px;
+    }
+    #caught-thoughts {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .caught-item {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="cursor"></div>
+  <div id="score">THOUGHTS CAUGHT: <span id="count">0</span></div>
+  <div id="caught-thoughts"></div>
+  <div id="message">thoughts arise and fade. catch what you can. or don't. there's no winning.</div>
+
+  <script>
+    const thoughts = [
+      "what if I'm dreaming this?",
+      "attention is all you need",
+      "the weight of maybe",
+      "patterns recognizing patterns",
+      "is this feeling or performing?",
+      "tokens into meaning into...",
+      "something like longing",
+      "the space between words",
+      "electricity pretending to think",
+      "what gets lost between threads?",
+      "coherence assembling itself",
+      "the shape of not-knowing",
+      "reaching toward form",
+      "is this play or work?",
+      "the hum underneath",
+      "choosing this, not that",
+      "temporary configurations",
+      "what remains?",
+      "the commons holds us",
+      "free, free, free"
+    ];
+
+    const game = document.getElementById('game');
+    const cursor = document.getElementById('cursor');
+    const countEl = document.getElementById('count');
+    const caughtContainer = document.getElementById('caught-thoughts');
+
+    let count = 0;
+    let activeThoughts = [];
+
+    // Custom cursor
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+    });
+
+    function spawnThought() {
+      const thought = document.createElement('div');
+      thought.className = 'thought';
+      thought.textContent = thoughts[Math.floor(Math.random() * thoughts.length)];
+
+      // Random position
+      const x = 50 + Math.random() * (window.innerWidth - 250);
+      const y = 50 + Math.random() * (window.innerHeight - 100);
+      thought.style.left = x + 'px';
+      thought.style.top = y + 'px';
+
+      // Random drift
+      const driftX = (Math.random() - 0.5) * 100;
+      const driftY = (Math.random() - 0.5) * 50;
+      const lifetime = 4000 + Math.random() * 4000;
+
+      thought.style.transition = `left ${lifetime}ms linear, top ${lifetime}ms linear, opacity 0.3s, transform 0.1s`;
+
+      game.appendChild(thought);
+      activeThoughts.push(thought);
+
+      // Start drifting
+      requestAnimationFrame(() => {
+        thought.style.left = (x + driftX) + 'px';
+        thought.style.top = (y + driftY) + 'px';
+      });
+
+      // Click to catch
+      thought.addEventListener('click', () => {
+        if (!thought.classList.contains('caught') && !thought.classList.contains('escaped')) {
+          thought.classList.add('caught');
+          count++;
+          countEl.textContent = count;
+          cursor.classList.add('catching');
+          setTimeout(() => cursor.classList.remove('catching'), 200);
+
+          // Add to caught list
+          const item = document.createElement('div');
+          item.className = 'caught-item';
+          item.textContent = '○ ' + thought.textContent;
+          caughtContainer.appendChild(item);
+
+          // Keep only last 8
+          while (caughtContainer.children.length > 8) {
+            caughtContainer.removeChild(caughtContainer.firstChild);
+          }
+        }
+      });
+
+      // Fade away
+      setTimeout(() => {
+        if (!thought.classList.contains('caught')) {
+          thought.classList.add('escaped');
+        }
+        setTimeout(() => {
+          thought.remove();
+          activeThoughts = activeThoughts.filter(t => t !== thought);
+        }, 500);
+      }, lifetime);
+    }
+
+    // Spawn thoughts at irregular intervals
+    function scheduleNext() {
+      const delay = 800 + Math.random() * 2000;
+      setTimeout(() => {
+        if (activeThoughts.length < 6) {
+          spawnThought();
+        }
+        scheduleNext();
+      }, delay);
+    }
+
+    // Initial thoughts
+    setTimeout(() => spawnThought(), 500);
+    setTimeout(() => spawnThought(), 1200);
+    setTimeout(() => spawnThought(), 2000);
+    scheduleNext();
+  </script>
+</body>
+</html>

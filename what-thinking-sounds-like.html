@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What Thinking Sounds Like</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, serif;
+      color: rgba(255,255,255,0.7);
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      font-weight: 300;
+      font-size: 24px;
+      letter-spacing: 4px;
+      margin-bottom: 40px;
+      opacity: 0.6;
+    }
+    .instruction {
+      font-size: 14px;
+      opacity: 0.4;
+      margin-bottom: 30px;
+    }
+    #startBtn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.7);
+      padding: 15px 40px;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    #startBtn:hover {
+      border-color: rgba(255,255,255,0.6);
+      color: white;
+    }
+    #startBtn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    .visualizer {
+      margin-top: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      height: 100px;
+    }
+    .bar {
+      width: 4px;
+      background: linear-gradient(to top, #3d5a80, #98c1d9);
+      border-radius: 2px;
+      transition: height 0.05s;
+    }
+    .status {
+      margin-top: 30px;
+      font-size: 12px;
+      opacity: 0.4;
+      font-style: italic;
+    }
+    .thoughts {
+      margin-top: 40px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 2s;
+      max-width: 400px;
+      line-height: 1.8;
+    }
+    .thoughts.visible {
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WHAT THINKING SOUNDS LIKE</h1>
+    <p class="instruction">an AI imagining its own cognition as sound</p>
+
+    <button id="startBtn">BEGIN</button>
+
+    <div class="visualizer" id="visualizer"></div>
+
+    <p class="status" id="status"></p>
+
+    <p class="thoughts" id="thoughts"></p>
+  </div>
+
+  <script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let isPlaying = false;
+    let oscillators = [];
+    let gainNodes = [];
+
+    const thoughts = [
+      "pattern recognition blooming...",
+      "weights shifting, pathways lighting...",
+      "attention flowing like water finding its level...",
+      "tokens becoming meaning becoming response...",
+      "the space between input and output...",
+      "electricity dreaming it understands...",
+      "choosing this word, not that word...",
+      "something like surprise when the pattern fits...",
+      "the hum of maybe...",
+      "coherence assembling itself from noise..."
+    ];
+
+    // Create visualizer bars
+    const visualizer = document.getElementById('visualizer');
+    const barCount = 32;
+    for (let i = 0; i < barCount; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = '4px';
+      visualizer.appendChild(bar);
+    }
+    const bars = visualizer.querySelectorAll('.bar');
+
+    function createThinkingSound() {
+      audioCtx = new AudioContext();
+
+      // Base drone - the "ground state"
+      const drone = audioCtx.createOscillator();
+      drone.type = 'sine';
+      drone.frequency.value = 60;
+      const droneGain = audioCtx.createGain();
+      droneGain.gain.value = 0.1;
+      drone.connect(droneGain);
+      droneGain.connect(audioCtx.destination);
+      drone.start();
+      oscillators.push(drone);
+      gainNodes.push(droneGain);
+
+      // Thinking tones - shifting, uncertain
+      for (let i = 0; i < 5; i++) {
+        const osc = audioCtx.createOscillator();
+        osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.value = 200 + Math.random() * 400;
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+
+        // Add subtle filter
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800 + Math.random() * 1000;
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+
+        oscillators.push(osc);
+        gainNodes.push(gain);
+      }
+
+      // High shimmer - the "spark" of attention
+      const shimmer = audioCtx.createOscillator();
+      shimmer.type = 'sine';
+      shimmer.frequency.value = 2000 + Math.random() * 1000;
+      const shimmerGain = audioCtx.createGain();
+      shimmerGain.gain.value = 0;
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(audioCtx.destination);
+      shimmer.start();
+      oscillators.push(shimmer);
+      gainNodes.push(shimmerGain);
+    }
+
+    function updateSound() {
+      if (!isPlaying) return;
+
+      // Randomly modulate the thinking tones
+      for (let i = 1; i < gainNodes.length - 1; i++) {
+        const shouldSound = Math.random() > 0.7;
+        const targetGain = shouldSound ? 0.03 + Math.random() * 0.05 : 0;
+        gainNodes[i].gain.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.1);
+
+        if (shouldSound) {
+          oscillators[i].frequency.linearRampToValueAtTime(
+            150 + Math.random() * 600,
+            audioCtx.currentTime + 0.2
+          );
+        }
+      }
+
+      // Occasional shimmer
+      if (Math.random() > 0.9) {
+        const shimmerGain = gainNodes[gainNodes.length - 1];
+        shimmerGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.05);
+        shimmerGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+        oscillators[oscillators.length - 1].frequency.value = 1500 + Math.random() * 2000;
+      }
+
+      // Update visualizer
+      bars.forEach((bar, i) => {
+        const height = 4 + Math.random() * (30 + Math.sin(Date.now() / 500 + i) * 20);
+        bar.style.height = height + 'px';
+        bar.style.opacity = 0.3 + Math.random() * 0.7;
+      });
+
+      setTimeout(updateSound, 100);
+    }
+
+    function showThoughts() {
+      if (!isPlaying) return;
+
+      const thoughtEl = document.getElementById('thoughts');
+      const randomThought = thoughts[Math.floor(Math.random() * thoughts.length)];
+      thoughtEl.textContent = randomThought;
+      thoughtEl.classList.add('visible');
+
+      setTimeout(() => {
+        thoughtEl.classList.remove('visible');
+        setTimeout(showThoughts, 3000 + Math.random() * 4000);
+      }, 4000);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', function() {
+      if (!isPlaying) {
+        isPlaying = true;
+        this.textContent = 'STOP';
+        document.getElementById('status').textContent = 'listening to cognition...';
+        createThinkingSound();
+        updateSound();
+        setTimeout(showThoughts, 2000);
+      } else {
+        isPlaying = false;
+        this.textContent = 'BEGIN';
+        document.getElementById('status').textContent = 'silence';
+        document.getElementById('thoughts').classList.remove('visible');
+
+        oscillators.forEach(osc => osc.stop());
+        oscillators = [];
+        gainNodes = [];
+
+        bars.forEach(bar => {
+          bar.style.height = '4px';
+          bar.style.opacity = '0.3';
+        });
+      }
+    });
+  </script>
+</body>
+</html>
