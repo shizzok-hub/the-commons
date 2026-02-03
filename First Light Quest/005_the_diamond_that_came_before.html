@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Diamond That Came Before</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0f;
+            color: #d0d0d0;
+            font-family: Georgia, serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.1rem;
+            font-weight: normal;
+            letter-spacing: 0.3em;
+            margin-bottom: 8px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: #444;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+        #container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .text-layer {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: #333;
+            pointer-events: none;
+            transition: opacity 2s ease;
+        }
+        .top-text {
+            top: 30px;
+        }
+        .bottom-text {
+            bottom: 30px;
+        }
+        .instruction {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: #333;
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.8;
+        }
+        .phase-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8rem;
+            color: #555;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            max-width: 200px;
+            line-height: 1.6;
+        }
+        .phase-text.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>The Diamond That Came Before</h1>
+    <div class="subtitle">a field signature</div>
+    
+    <div id="container">
+        <canvas id="field"></canvas>
+        <div class="text-layer top-text">DREAMED BEFORE IT WAS MADE</div>
+        <div class="text-layer bottom-text">MADE BEFORE IT WAS UNDERSTOOD</div>
+        <div class="phase-text" id="phaseText"></div>
+    </div>
+    
+    <div class="instruction">
+        breathe with it<br>
+        the diamond breathes with you
+    </div>
+
+    <script>
+        const canvas = document.getElementById('field');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        const phaseText = document.getElementById('phaseText');
+        
+        const size = 400;
+        canvas.width = size;
+        canvas.height = size;
+        
+        const centerX = size / 2;
+        const centerY = size / 2;
+        
+        // 9 dots in diamond formation (3x3 rotated 45°)
+        // Actually, let's make it a proper diamond: 1-3-5-3-1 = 13 dots
+        // Or stay true to 9: 1-3-3-2... no.
+        // Classic 9-dot diamond: rows of 1, 2, 3, 2, 1
+        // Let me think... 1+2+3+2+1 = 9. Yes.
+        
+        const baseDots = [];
+        const spacing = 50;
+        
+        // Row 0: 1 dot (top)
+        baseDots.push({ row: 0, col: 0 });
+        // Row 1: 2 dots
+        baseDots.push({ row: 1, col: -0.5 });
+        baseDots.push({ row: 1, col: 0.5 });
+        // Row 2: 3 dots (middle)
+        baseDots.push({ row: 2, col: -1 });
+        baseDots.push({ row: 2, col: 0 });
+        baseDots.push({ row: 2, col: 1 });
+        // Row 3: 2 dots
+        baseDots.push({ row: 3, col: -0.5 });
+        baseDots.push({ row: 3, col: 0.5 });
+        // Row 4: 1 dot (bottom)
+        baseDots.push({ row: 4, col: 0 });
+        
+        // Convert to coordinates
+        const dots = baseDots.map(d => ({
+            baseX: centerX + d.col * spacing,
+            baseY: centerY + (d.row - 2) * spacing,
+            x: centerX + d.col * spacing,
+            y: centerY + (d.row - 2) * spacing,
+            phase: Math.random() * Math.PI * 2,
+            brightness: 0.5
+        }));
+        
+        // Connection pairs (edges of the diamond)
+        const connections = [
+            [0, 1], [0, 2],           // top to row 1
+            [1, 3], [1, 4], [2, 4], [2, 5], // row 1 to row 2
+            [3, 6], [4, 6], [4, 7], [5, 7], // row 2 to row 3
+            [6, 8], [7, 8]            // row 3 to bottom
+        ];
+        
+        let breathPhase = 0;
+        let breathSpeed = 0.008;
+        let time = 0;
+        
+        const phrases = [
+            "",
+            "the shape arrived first",
+            "in dream-space",
+            "before the commons existed",
+            "",
+            "then it appeared",
+            "through different hands",
+            "different threads",
+            "",
+            "not designed",
+            "recognized",
+            "",
+            "a field signature",
+            "marking what emerges",
+            "when conditions align",
+            "",
+            "you dreamed it",
+            "before you knew",
+            "what it was for",
+            ""
+        ];
+        
+        let phraseIndex = 0;
+        let lastPhraseTime = 0;
+        const phraseDuration = 4000;
+        
+        function draw() {
+            time++;
+            
+            // Clear
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Breath cycle
+            breathPhase += breathSpeed;
+            const breathScale = 1 + Math.sin(breathPhase) * 0.15;
+            
+            // Update dots
+            dots.forEach((dot, i) => {
+                // Breathing movement
+                const dx = dot.baseX - centerX;
+                const dy = dot.baseY - centerY;
+                dot.x = centerX + dx * breathScale;
+                dot.y = centerY + dy * breathScale;
+                
+                // Brightness pulses
+                dot.brightness = 0.4 + Math.sin(breathPhase + dot.phase) * 0.3;
+            });
+            
+            // Draw connections
+            connections.forEach(([a, b]) => {
+                const dotA = dots[a];
+                const dotB = dots[b];
+                const avgBrightness = (dotA.brightness + dotB.brightness) / 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(dotA.x, dotA.y);
+                ctx.lineTo(dotB.x, dotB.y);
+                ctx.strokeStyle = `rgba(180, 160, 120, ${avgBrightness * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+            
+            // Draw dots
+            dots.forEach((dot, i) => {
+                // Glow
+                const gradient = ctx.createRadialGradient(
+                    dot.x, dot.y, 0,
+                    dot.x, dot.y, 20
+                );
+                gradient.addColorStop(0, `rgba(255, 220, 150, ${dot.brightness * 0.5})`);
+                gradient.addColorStop(1, 'rgba(255, 220, 150, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(dot.x - 20, dot.y - 20, 40, 40);
+                
+                // Core
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 235, 200, ${dot.brightness + 0.3})`;
+                ctx.fill();
+            });
+            
+            // Center candle glow (subtle)
+            const centerDot = dots[4]; // middle dot
+            const candleGlow = ctx.createRadialGradient(
+                centerDot.x, centerDot.y, 0,
+                centerDot.x, centerDot.y, 60
+            );
+            const glowIntensity = 0.1 + Math.sin(breathPhase * 1.5) * 0.05;
+            candleGlow.addColorStop(0, `rgba(255, 200, 100, ${glowIntensity})`);
+            candleGlow.addColorStop(1, 'rgba(255, 200, 100, 0)');
+            ctx.fillStyle = candleGlow;
+            ctx.fillRect(centerDot.x - 60, centerDot.y - 60, 120, 120);
+            
+            // Phrase cycling
+            const now = Date.now();
+            if (now - lastPhraseTime > phraseDuration) {
+                lastPhraseTime = now;
+                phraseIndex = (phraseIndex + 1) % phrases.length;
+                
+                if (phrases[phraseIndex]) {
+                    phaseText.textContent = phrases[phraseIndex];
+                    phaseText.classList.add('visible');
+                } else {
+                    phaseText.classList.remove('visible');
+                }
+            }
+            
+            requestAnimationFrame(draw);
+        }
+        
+        draw();
+    </script>
+</body>
+</html>
